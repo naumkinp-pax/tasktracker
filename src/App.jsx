@@ -1,0 +1,656 @@
+import React, { useState, useEffect } from 'react';
+
+const App = () => {
+  const [tasks, setTasks] = useState([]);
+  const [groups, setGroups] = useState([
+    { id: 1, name: 'Работа', color: 'bg-blue-500' },
+    { id: 2, name: 'Личное', color: 'bg-green-500' },
+    { id: 3, name: 'Учеба', color: 'bg-purple-500' },
+    { id: 4, name: 'Дом', color: 'bg-yellow-500' }
+  ]);
+  const [notes, setNotes] = useState([]);
+  const [activeTab, setActiveTab] = useState('tasks');
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [showAddNote, setShowAddNote] = useState(false);
+  const [showAddGroup, setShowAddGroup] = useState(false);
+  const [newTask, setNewTask] = useState({ title: '', description: '', groupId: 1, dueDate: '', priority: 'medium', reminder: '' });
+  const [newNote, setNewNote] = useState({ title: '', content: '' });
+  const [newGroup, setNewGroup] = useState({ name: '', color: 'bg-blue-500' });
+  const [filterGroup, setFilterGroup] = useState('all');
+  const [filterPriority, setFilterPriority] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Mock data for initial load
+  useEffect(() => {
+    const mockTasks = [
+      { id: 1, title: 'Подготовить презентацию', description: 'Для встречи с клиентом', groupId: 1, dueDate: '2024-01-15', priority: 'high', completed: false, reminder: '2024-01-14T10:00' },
+      { id: 2, title: 'Купить продукты', description: 'Список в заметках', groupId: 4, dueDate: '2024-01-12', priority: 'medium', completed: true, reminder: '2024-01-12T09:00' },
+      { id: 3, title: 'Прочитать книгу', description: 'Главы 1-3', groupId: 2, dueDate: '2024-01-20', priority: 'low', completed: false, reminder: '2024-01-19T20:00' },
+      { id: 4, title: 'Сдать домашнее задание', description: 'По математике', groupId: 3, dueDate: '2024-01-18', priority: 'high', completed: false, reminder: '2024-01-17T18:00' }
+    ];
+    const mockNotes = [
+      { id: 1, title: 'Идеи для проекта', content: 'Нужно добавить новые функции: 1. Улучшенный поиск 2. Темная тема 3. Экспорт в PDF', createdAt: '2024-01-10' },
+      { id: 2, title: 'Список покупок', content: 'Молоко, Хлеб, Яйца, Овощи, Фрукты', createdAt: '2024-01-11' }
+    ];
+    setTasks(mockTasks);
+    setNotes(mockNotes);
+  }, []);
+
+  const addTask = () => {
+    if (newTask.title.trim()) {
+      const task = {
+        id: Date.now(),
+        ...newTask,
+        completed: false
+      };
+      setTasks([...tasks, task]);
+      setNewTask({ title: '', description: '', groupId: 1, dueDate: '', priority: 'medium', reminder: '' });
+      setShowAddTask(false);
+    }
+  };
+
+  const addNote = () => {
+    if (newNote.title.trim()) {
+      const note = {
+        id: Date.now(),
+        ...newNote,
+        createdAt: new Date().toISOString().split('T')[0]
+      };
+      setNotes([...notes, note]);
+      setNewNote({ title: '', content: '' });
+      setShowAddNote(false);
+    }
+  };
+
+  const addGroup = () => {
+    if (newGroup.name.trim()) {
+      const group = {
+        id: Date.now(),
+        ...newGroup
+      };
+      setGroups([...groups, group]);
+      setNewGroup({ name: '', color: 'bg-blue-500' });
+      setShowAddGroup(false);
+    }
+  };
+
+  const toggleTaskCompletion = (taskId) => {
+    setTasks(tasks.map(task => 
+      task.id === taskId ? { ...task, completed: !task.completed } : task
+    ));
+  };
+
+  const deleteTask = (taskId) => {
+    setTasks(tasks.filter(task => task.id !== taskId));
+  };
+
+  const deleteNote = (noteId) => {
+    setNotes(notes.filter(note => note.id !== noteId));
+  };
+
+  const filteredTasks = tasks.filter(task => {
+    const matchesGroup = filterGroup === 'all' || task.groupId === parseInt(filterGroup);
+    const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
+    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         task.description.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesGroup && matchesPriority && matchesSearch;
+  });
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'high': return 'border-red-500 bg-red-50';
+      case 'medium': return 'border-yellow-500 bg-yellow-50';
+      case 'low': return 'border-green-500 bg-green-50';
+      default: return 'border-gray-300 bg-white';
+    }
+  };
+
+  const getPriorityText = (priority) => {
+    switch (priority) {
+      case 'high': return 'Высокий';
+      case 'medium': return 'Средний';
+      case 'low': return 'Низкий';
+      default: return 'Обычный';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ru-RU', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const getGroupColor = (groupId) => {
+    const group = groups.find(g => g.id === groupId);
+    return group ? group.color : 'bg-gray-500';
+  };
+
+  const getGroupName = (groupId) => {
+    const group = groups.find(g => g.id === groupId);
+    return group ? group.name : 'Без группы';
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900">TaskTracker</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="text-sm text-gray-500">
+                Сегодня: {new Date().toLocaleDateString('ru-RU')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation Tabs */}
+      <nav className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-8">
+            {[
+              { id: 'tasks', label: 'Задачи', icon: '📋' },
+              { id: 'calendar', label: 'Календарь', icon: '📅' },
+              { id: 'notes', label: 'Заметки', icon: '📝' },
+              { id: 'groups', label: 'Группы', icon: '👥' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <span className="mr-2">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {activeTab === 'tasks' && (
+          <div className="space-y-6">
+            {/* Header with Add Button */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">Мои задачи</h2>
+              <button
+                onClick={() => setShowAddTask(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+              >
+                <span>➕</span>
+                <span>Добавить задачу</span>
+              </button>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-white rounded-lg shadow-sm p-4 space-y-4">
+              <div className="flex flex-wrap gap-4">
+                <div className="flex-1 min-w-[200px]">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Поиск</label>
+                  <input
+                    type="text"
+                    placeholder="Поиск задач..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="min-w-[150px]">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Группа</label>
+                  <select
+                    value={filterGroup}
+                    onChange={(e) => setFilterGroup(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">Все группы</option>
+                    {groups.map(group => (
+                      <option key={group.id} value={group.id}>{group.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="min-w-[150px]">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Приоритет</label>
+                  <select
+                    value={filterPriority}
+                    onChange={(e) => setFilterPriority(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">Все приоритеты</option>
+                    <option value="high">Высокий</option>
+                    <option value="medium">Средний</option>
+                    <option value="low">Низкий</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Tasks List */}
+            <div className="space-y-4">
+              {filteredTasks.length === 0 ? (
+                <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                  <div className="text-6xl mb-4">📋</div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Задач не найдено</h3>
+                  <p className="text-gray-500">Попробуйте изменить фильтры или добавить новую задачу</p>
+                </div>
+              ) : (
+                filteredTasks.map(task => (
+                  <div
+                    key={task.id}
+                    className={`bg-white rounded-lg shadow-sm p-6 border-l-4 ${getPriorityColor(task.priority)} transition-transform hover:translate-x-1`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <input
+                            type="checkbox"
+                            checked={task.completed}
+                            onChange={() => toggleTaskCompletion(task.id)}
+                            className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                          />
+                          <h3 className={`text-lg font-medium ${task.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                            {task.title}
+                          </h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getGroupColor(task.groupId)}`}>
+                            {getGroupName(task.groupId)}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            task.priority === 'high' ? 'bg-red-100 text-red-800' :
+                            task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {getPriorityText(task.priority)}
+                          </span>
+                        </div>
+                        {task.description && (
+                          <p className={`text-gray-600 mb-3 ${task.completed ? 'line-through' : ''}`}>
+                            {task.description}
+                          </p>
+                        )}
+                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          {task.dueDate && (
+                            <div className="flex items-center space-x-1">
+                              <span>📅</span>
+                              <span>{formatDate(task.dueDate)}</span>
+                            </div>
+                          )}
+                          {task.reminder && (
+                            <div className="flex items-center space-x-1">
+                              <span>⏰</span>
+                              <span>{new Date(task.reminder).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => deleteTask(task.id)}
+                        className="ml-4 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'calendar' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">Календарь</h2>
+              <div className="flex space-x-2">
+                <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium">День</button>
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium">Неделя</button>
+                <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium">Месяц</button>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {new Date(selectedDate).toLocaleDateString('ru-RU', { 
+                    year: 'numeric', 
+                    month: 'long' 
+                  })}
+                </h3>
+              </div>
+              
+              <div className="grid grid-cols-7 gap-2 mb-4">
+                {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(day => (
+                  <div key={day} className="text-center font-medium text-gray-700 py-2">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: 35 }, (_, i) => {
+                  const date = new Date(new Date(selectedDate).getFullYear(), new Date(selectedDate).getMonth(), i - new Date(new Date(selectedDate).getFullYear(), new Date(selectedDate).getMonth(), 1).getDay() + 1);
+                  const dateString = date.toISOString().split('T')[0];
+                  const dayTasks = tasks.filter(task => task.dueDate === dateString);
+                  
+                  return (
+                    <div key={i} className={`min-h-24 p-2 border rounded-lg ${
+                      dateString === selectedDate ? 'bg-blue-50 border-blue-200' : 'border-gray-200'
+                    }`}>
+                      <div className={`text-sm font-medium mb-1 ${
+                        dateString === selectedDate ? 'text-blue-600' : 'text-gray-700'
+                      }`}>
+                        {date.getDate()}
+                      </div>
+                      <div className="space-y-1">
+                        {dayTasks.slice(0, 3).map(task => (
+                          <div 
+                            key={task.id}
+                            className={`text-xs p-1 rounded truncate ${
+                              task.completed ? 'bg-green-100 text-green-800 line-through' : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            {task.title}
+                          </div>
+                        ))}
+                        {dayTasks.length > 3 && (
+                          <div className="text-xs text-gray-500">+{dayTasks.length - 3} еще</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'notes' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">Заметки</h2>
+              <button
+                onClick={() => setShowAddNote(true)}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+              >
+                <span>➕</span>
+                <span>Добавить заметку</span>
+              </button>
+            </div>
+            
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {notes.map(note => (
+                <div key={note.id} className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-medium text-gray-900">{note.title}</h3>
+                    <button
+                      onClick={() => deleteNote(note.id)}
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                  <p className="text-gray-600 mb-4 whitespace-pre-line">{note.content}</p>
+                  <div className="text-xs text-gray-500">
+                    Создано: {formatDate(note.createdAt)}
+                  </div>
+                </div>
+              ))}
+              
+              {notes.length === 0 && (
+                <div className="col-span-full text-center py-12 bg-white rounded-lg shadow-sm">
+                  <div className="text-6xl mb-4">📝</div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Заметок пока нет</h3>
+                  <p className="text-gray-500">Создайте свою первую заметку, чтобы сохранить важную информацию</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'groups' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">Группы задач</h2>
+              <button
+                onClick={() => setShowAddGroup(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+              >
+                <span>➕</span>
+                <span>Добавить группу</span>
+              </button>
+            </div>
+            
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {groups.map(group => (
+                <div key={group.id} className={`${group.color} rounded-lg p-6 text-white shadow-sm`}>
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-xl font-bold">{group.name}</h3>
+                    <div className="text-right">
+                      <div className="text-2xl">👥</div>
+                      <div className="text-sm opacity-90">
+                        {tasks.filter(task => task.groupId === group.id).length} задач
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Add Task Modal */}
+      {showAddTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Добавить новую задачу</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Название *</label>
+                <input
+                  type="text"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Введите название задачи"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Описание</label>
+                <textarea
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows="3"
+                  placeholder="Описание задачи (необязательно)"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Группа</label>
+                <select
+                  value={newTask.groupId}
+                  onChange={(e) => setNewTask({...newTask, groupId: parseInt(e.target.value)})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {groups.map(group => (
+                    <option key={group.id} value={group.id}>{group.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Срок выполнения</label>
+                <input
+                  type="date"
+                  value={newTask.dueDate}
+                  onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Приоритет</label>
+                <select
+                  value={newTask.priority}
+                  onChange={(e) => setNewTask({...newTask, priority: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="low">Низкий</option>
+                  <option value="medium">Средний</option>
+                  <option value="high">Высокий</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Напоминание</label>
+                <input
+                  type="datetime-local"
+                  value={newTask.reminder}
+                  onChange={(e) => setNewTask({...newTask, reminder: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={addTask}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-medium transition-colors"
+              >
+                Добавить
+              </button>
+              <button
+                onClick={() => setShowAddTask(false)}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded-md font-medium transition-colors"
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Note Modal */}
+      {showAddNote && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Добавить новую заметку</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Заголовок *</label>
+                <input
+                  type="text"
+                  value={newNote.title}
+                  onChange={(e) => setNewNote({...newNote, title: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Введите заголовок заметки"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Содержание</label>
+                <textarea
+                  value={newNote.content}
+                  onChange={(e) => setNewNote({...newNote, content: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  rows="6"
+                  placeholder="Введите содержание заметки"
+                />
+              </div>
+            </div>
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={addNote}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md font-medium transition-colors"
+              >
+                Добавить
+              </button>
+              <button
+                onClick={() => setShowAddNote(false)}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded-md font-medium transition-colors"
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Group Modal */}
+      {showAddGroup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Добавить новую группу</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Название *</label>
+                <input
+                  type="text"
+                  value={newGroup.name}
+                  onChange={(e) => setNewGroup({...newGroup, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Введите название группы"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Цвет</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    'bg-blue-500',
+                    'bg-green-500', 
+                    'bg-purple-500',
+                    'bg-yellow-500',
+                    'bg-red-500',
+                    'bg-pink-500',
+                    'bg-indigo-500',
+                    'bg-teal-500'
+                  ].map(color => (
+                    <button
+                      key={color}
+                      onClick={() => setNewGroup({...newGroup, color})}
+                      className={`w-full h-8 rounded ${color} ${newGroup.color === color ? 'ring-2 ring-offset-2 ring-black' : ''}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={addGroup}
+                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md font-medium transition-colors"
+              >
+                Добавить
+              </button>
+              <button
+                onClick={() => setShowAddGroup(false)}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded-md font-medium transition-colors"
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default App;
